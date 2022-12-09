@@ -1,6 +1,10 @@
 mod completion;
 mod feishu;
-use std::{env, str::FromStr};
+use std::{
+    env,
+    str::FromStr,
+    sync::{Arc, RwLock},
+};
 
 use axum::{
     extract,
@@ -11,15 +15,20 @@ use axum::{
 };
 use dotenvy::dotenv;
 use feishu::{
-    auth::{get_access_token, get_access_token_periodically},
+    auth::{get_access_token_periodically},
     events::{common::BotEvent, EventType},
 };
-use tokio::task;
+use tokio::{task};
 
 use crate::{
     completion::completion,
     feishu::{events::im_message::IMMessageReceiveEvent, message::reply_message},
 };
+
+pub struct BotState {
+    pub openai_key: String,
+    pub access_token: String,
+}
 
 #[tokio::main]
 async fn main() {
@@ -31,19 +40,21 @@ async fn main() {
     let app_id = env::var("APP_ID").unwrap();
     let app_secret = env::var("APP_SECRET").unwrap();
     let openai_key = env::var("OPENAI_KEY").unwrap();
-    let access_token = get_access_token(app_id.clone(), app_secret.clone())
-        .await
-        .unwrap();
+    let bot_state = Arc::new(RwLock::new(BotState {
+        openai_key,
+        access_token: "".to_string(), // 之后在定时任务中更新
+    }));
     // 周期性地获取 access token
     let access_token_task = task::spawn(get_access_token_periodically(
         app_id.clone(),
         app_secret.clone(),
+        bot_state.clone(),
     ));
     tokio::spawn(access_token_task);
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
         .route("/bot", post(bot))
-        .layer(Extension((openai_key, access_token)));
+        .layer(Extension(bot_state));
 
     Server::bind(&format!("{}:{}", host, port).parse().unwrap())
         .serve(app.into_make_service())
@@ -52,7 +63,7 @@ async fn main() {
 }
 
 async fn bot(
-    Extension((openai_key, access_token)): Extension<(String, String)>,
+    Extension(state): Extension<Arc<RwLock<BotState>>>,
     extract::Json(bot_event): extract::Json<BotEvent>,
 ) -> impl IntoResponse {
     let et = bot_event.header.event_type;
@@ -61,6 +72,9 @@ async fn bot(
             EventType::IMMessageReceive => {
                 let e: IMMessageReceiveEvent = serde_json::from_value(bot_event.event).unwrap();
                 tracing::debug!("Chat message: {:?}", e.message.message_id);
+                let bot_state = state.read().unwrap();
+                let openai_key = bot_state.openai_key.clone();
+                let access_token = bot_state.access_token.clone();
                 let c_task = task::spawn(completion_chat(
                     e.message.message_id,
                     e.message.content.clone(),
