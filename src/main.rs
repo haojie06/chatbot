@@ -10,8 +10,9 @@ use axum::{
     Extension, Router, Server,
 };
 use dotenvy::dotenv;
-use feishu::{events::EventType, auth::get_access_token};
+use feishu::{auth::get_access_token, events::EventType};
 use serde::{Deserialize, Serialize};
+use tokio::task;
 
 use crate::{
     chat::completion,
@@ -57,22 +58,14 @@ async fn bot(
     Extension((openai_key, access_token)): Extension<(String, String)>,
     extract::Json(bot_event): extract::Json<BotEvent>,
 ) -> impl IntoResponse {
-
     let et = bot_event.header.event_type;
     if let Ok(event_type) = EventType::from_str(et.as_str()) {
-        // tracing::info!("Event type: {:?}", event_type);
         match event_type {
             EventType::IMMessageReceive => {
                 let e: IMMessageReceiveEvent = serde_json::from_value(bot_event.event).unwrap();
-                tracing::info!("Chat message: {:?}", e.message.message_id);
-                let completion_result = completion(e.message.content.clone(), openai_key).await;
-                tracing::info!("Completion result: {}", completion_result);
-                reply_message(
-                    e.message.message_id,
-                    e.message.content.clone(),
-                    access_token,
-                )
-                .await;
+                tracing::debug!("Chat message: {:?}", e.message.message_id);
+                let c_task = task::spawn(completion_chat(e.message.message_id, e.message.content.clone(), openai_key, access_token));
+                tokio::spawn(c_task);
             }
         }
     } else {
@@ -81,6 +74,20 @@ async fn bot(
     (StatusCode::OK, "OK")
 }
 
+async fn completion_chat(
+    message_id: String,
+    message_content: String,
+    openai_key: String,
+    access_token: String,
+) {
+    let completion_result = completion(message_content.clone(), openai_key).await;
+    reply_message(
+        message_id,
+        completion_result,
+        access_token,
+    )
+    .await;
+}
 #[derive(Debug, Deserialize)]
 struct BotEvent {
     // schema: String,

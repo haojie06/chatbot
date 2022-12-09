@@ -17,7 +17,7 @@ pub async fn completion(prompt: String, api_key: String) -> String {
         .json(&CompletionPayload {
             model: "text-davinci-003",
             prompt: prompt,
-            max_tokens: 64,
+            max_tokens: 1024,
             temperature: 0.9,
         })
         .send()
@@ -25,10 +25,12 @@ pub async fn completion(prompt: String, api_key: String) -> String {
     match res {
         Ok(res) => match res.text().await {
             Ok(body) => {
-                println!("{}", body);
                 let completion_result: Result<CompletionResponse, serde_json::Error> = serde_json::from_str(&body);
                 match completion_result {
-                    Ok(completion) => completion.choices[0].text.clone(),
+                    Ok(completion) => {
+                        // tracing::info!("{:?}", completion.choices);
+                        completion.choices[0].text.clone()
+                    },
                     Err(err) => {
                         tracing::error!("Error: {}", err);
                         "Error".to_string()
@@ -47,7 +49,7 @@ pub async fn completion(prompt: String, api_key: String) -> String {
     }
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize,Debug)]
 pub struct CompletionChoice {
     text: String,
     // index: u32,

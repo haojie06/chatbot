@@ -32,7 +32,6 @@ pub async fn get_access_token(app_id: String, app_secret: String) -> Option<Stri
                     serde_json::from_str(&body);
                 match access_token_result {
                     Ok(access_token) => {
-                        tracing::info!("{:?}", access_token);
                         Some(access_token.app_access_token)
                     }
                     Err(err) => {
