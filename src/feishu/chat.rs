@@ -22,10 +22,6 @@ pub async fn reply_message(message_id: String, content: String, access_token: St
         text: content.clone(),
     })
     .unwrap();
-    let c = serde_json::to_string(&ReplyMessagePaylod {
-        content: content.clone(),
-        msg_type: "text".to_string(),
-    });
     let client = reqwest::Client::new();
     let res = client
         .post(format!(
