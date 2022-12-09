@@ -17,8 +17,8 @@ pub async fn completion(prompt: String, api_key: String) -> String {
         .json(&CompletionPayload {
             model: "text-davinci-003",
             prompt: prompt,
-            max_tokens: 1024,
-            temperature: 0.9,
+            max_tokens: 500,
+            temperature: 0.1,
         })
         .send()
         .await;
