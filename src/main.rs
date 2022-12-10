@@ -17,7 +17,7 @@ use feishu::{
     auth::get_access_token_periodically,
     events::{common::BotEvent, EventType},
 };
-use tracing::{log::warn, info};
+use tracing::log::warn;
 
 use crate::{
     completion::completion,
@@ -75,6 +75,10 @@ async fn bot(
         match event_type {
             EventType::IMMessageReceive => {
                 let e: IMMessageReceiveEvent = serde_json::from_value(bot_event.event).unwrap();
+                if e.message.message_type.ne("text") {
+                    warn!("Unsupported message type: {}", e.message.message_type);
+                    return (StatusCode::OK, "OK");
+                }
                 let text_message: IMMessageText =
                     serde_json::from_str(e.message.content.as_str()).unwrap();
                 let bot_state = state.read().await;
@@ -93,13 +97,13 @@ async fn bot(
                         .get_mut(&e.sender.sender_id.user_id)
                         .unwrap();
                     // 如果用户不是在回复消息，则清空上下文
-                    if e.message.parent_id == "" || e.message.parent_id != chat_context.current_message_id {
+                    if e.message.parent_id == ""
+                        || e.message.parent_id != chat_context.current_message_id
+                    {
                         chat_context.clear();
                     }
-                    // c_message = format!("{}\n{}", chat_context.messages.clone(), text_message.text.clone());
                     chat_context.add_message(chat_context::MessageSender::Human, text_message.text);
-                    c_message = format!("{}\nAI:",chat_context.messages.clone());
-                    info!("Chat context:\n{}", chat_context.messages);
+                    c_message = format!("{}\nAI:", chat_context.messages.clone());
                 }
 
                 let openai_key = bot_state.openai_key.clone();
@@ -128,7 +132,7 @@ async fn completion_chat(
     access_token: String,
     state: Arc<RwLock<BotState>>,
 ) {
-    let mut completion_result = completion(message_content.clone(), openai_key).await;
+    let mut completion_result = completion(message_content.clone(), &message_id, openai_key).await;
     if completion_result == "" {
         warn!("Completion result is empty");
         completion_result = "我不知道你在说什么(ChatGPT返回空值)".to_string();

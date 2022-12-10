@@ -29,12 +29,12 @@ impl ChatContext {
     }
 
     pub fn add_message(&mut self, sender: MessageSender, message: String) {
-        self.messages = format!("{}\n{}: {}", self.messages, sender, message)
+        self.messages = format!("{}\n{}:{}", self.messages, sender, message)
     }
 
     pub fn add_message_with_id(&mut self, sender: MessageSender, message: String, message_id: String) {
         self.current_message_id = message_id;
-        self.messages = format!("{}\n{}: {}", self.messages, sender, message)
+        self.messages = format!("{}\n{}:{}", self.messages, sender, message)
     }
 
     pub fn clear(&mut self) {
