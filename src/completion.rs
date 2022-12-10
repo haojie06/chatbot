@@ -12,6 +12,7 @@ struct CompletionPayload {
 
 pub async fn completion(prompt: String, message_id: &String, api_key: String) -> String {
     info!("Start completion task for message {}", message_id);
+    info!("Prompt: {}", prompt);
     let client = reqwest::Client::new();
     let res = client
         .post("https://api.openai.com/v1/completions")
@@ -20,7 +21,7 @@ pub async fn completion(prompt: String, message_id: &String, api_key: String) ->
         .json(&CompletionPayload {
             model: "text-davinci-003",
             prompt: prompt,
-            max_tokens: 4000,
+            max_tokens: 3000,
             temperature: 0.9,
             stop: ["Human:", "AI:"],
         })
@@ -33,24 +34,25 @@ pub async fn completion(prompt: String, message_id: &String, api_key: String) ->
                     serde_json::from_str(&body);
                 match completion_result {
                     Ok(completion) => {
-                        info!("Completion task for message {} token usage - input:{} output:{} total:{} ", 
+                        let header = format!("Completion task for message {} token usage - input:{} output:{} total:{} ", 
                         message_id, completion.usage.prompt_tokens, completion.usage.completion_tokens, completion.usage.total_tokens);
-                        completion.choices[0].text.trim().to_string()
+                        info!(header);
+                        format!("{}\n{}",header, completion.choices[0].text.trim().to_string())   
                     }
                     Err(err) => {
-                        tracing::error!("Error: {}", err);
-                        "Error".to_string()
+                        tracing::error!("Error: {} body: {}", err, body);
+                        body
                     }
                 }
             }
             Err(err) => {
                 tracing::error!("Error: {}", err);
-                "Error".to_string()
+                err.to_string()
             }
         },
         Err(err) => {
             tracing::error!("Error: {}", err);
-            "Error".to_string()
+            err.to_string()
         }
     }
 }
