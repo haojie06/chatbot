@@ -1,11 +1,13 @@
 use reqwest;
 
+
 #[derive(serde::Serialize)]
 struct CompletionPayload {
     model: &'static str,
     prompt: String,
     max_tokens: u32,
     temperature: f32,
+    // stop: [&'static str; 2],
 }
 
 pub async fn completion(prompt: String, api_key: String) -> String {
@@ -18,7 +20,8 @@ pub async fn completion(prompt: String, api_key: String) -> String {
             model: "text-davinci-003",
             prompt: prompt,
             max_tokens: 500,
-            temperature: 0.1,
+            temperature: 0.9,
+            // stop: ["Human: ","AI: "],
         })
         .send()
         .await;
@@ -28,8 +31,7 @@ pub async fn completion(prompt: String, api_key: String) -> String {
                 let completion_result: Result<CompletionResponse, serde_json::Error> = serde_json::from_str(&body);
                 match completion_result {
                     Ok(completion) => {
-                        // tracing::info!("{:?}", completion.choices);
-                        completion.choices[0].text.clone()
+                        completion.choices[0].text.trim().to_string()
                     },
                     Err(err) => {
                         tracing::error!("Error: {}", err);

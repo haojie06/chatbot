@@ -34,6 +34,11 @@ pub struct IMMessageContent {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct IMMessageText {
+    pub text: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct IMMessageReceiveEvent {
     pub sender: IMMessageSender,
     pub message: IMMessageContent,

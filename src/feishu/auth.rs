@@ -1,4 +1,5 @@
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
+use tokio::sync::RwLock;
 
 use serde::{Deserialize, Serialize};
 
@@ -63,13 +64,13 @@ pub async fn get_access_token(app_id: String, app_secret: String) -> Option<Stri
 
 // 周期性地获取 access token
 pub async fn get_access_token_periodically(app_id: String, app_secret: String, bot_state: Arc<RwLock<BotState>>) -> Option<String> {
-    let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
+    let mut interval = tokio::time::interval(std::time::Duration::from_secs(1800));
     loop {
         interval.tick().await;
         let access_token = get_access_token(app_id.clone(), app_secret.clone()).await;
         if access_token.is_some() {
             let token = access_token.unwrap();
-            let mut state = bot_state.write().unwrap();
+            let mut state = bot_state.write().await;
             state.access_token = token.clone();
             tracing::info!("Refresh token {}", token.clone());
         } else {

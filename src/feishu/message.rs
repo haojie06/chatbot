@@ -12,12 +12,18 @@ struct ReplyMessageTextContent {
 }
 
 #[derive(Deserialize)]
+struct ReplyMessageResponseData {
+    message_id: String,
+}
+
+#[derive(Deserialize)]
 struct ReplyMessageResponse {
     code: i32,
     msg: String,
+    data: ReplyMessageResponseData,
 }
 
-pub async fn reply_message(message_id: String, content: String, access_token: String) {
+pub async fn reply_message(message_id: String, content: &String, access_token: String) -> String {
     let content = serde_json::to_string(&ReplyMessageTextContent {
         text: content.clone(),
     })
@@ -43,16 +49,20 @@ pub async fn reply_message(message_id: String, content: String, access_token: St
                     serde_json::from_str(&body);
                 if let Ok(reply_message) = reply_message_result {
                     (reply_message.code != 0).then(|| tracing::warn!("Reply message failed: {}", reply_message.msg));
+                    reply_message.data.message_id
                 } else {
-                    tracing::error!("Error: {}", reply_message_result.err().unwrap());
+                    tracing::error!("Error: {}\n{}", reply_message_result.err().unwrap(), body);
+                    "".to_string()
                 }
             }
             Err(err) => {
                 tracing::error!("Error: {}", err);
+                "".to_string()
             }
         },
         Err(err) => {
             tracing::error!("Error: {}", err);
+            "".to_string()
         }
     }
 }
