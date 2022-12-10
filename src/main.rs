@@ -17,7 +17,7 @@ use feishu::{
     auth::get_access_token_periodically,
     events::{common::BotEvent, EventType},
 };
-use tracing::{log::warn};
+use tracing::{log::warn, info};
 
 use crate::{
     completion::completion,
@@ -98,8 +98,8 @@ async fn bot(
                     }
                     // c_message = format!("{}\n{}", chat_context.messages.clone(), text_message.text.clone());
                     chat_context.add_message(chat_context::MessageSender::Human, text_message.text);
-                    c_message = chat_context.messages.clone();
-                    // info!("Chat context:\n{}", chat_context.messages);
+                    c_message = format!("{}\nAI:",chat_context.messages.clone());
+                    info!("Chat context:\n{}", chat_context.messages);
                 }
 
                 let openai_key = bot_state.openai_key.clone();

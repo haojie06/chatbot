@@ -1,6 +1,5 @@
 use std::{collections::HashMap, fmt::Display};
 use tokio::sync::RwLock;
-use tracing::info;
 
 // 为每个用户建立一个map，key是用户id，value是用户上下文，只要用户输入的信息是有parent_id的，就把上下文一起发给机器人，如果用户输入了不包含parent_id的信息，就把上下文清空
 pub enum MessageSender {
@@ -25,7 +24,7 @@ impl ChatContext {
     pub fn new() -> Self {
         Self {
             current_message_id: "".to_string(),
-            messages: "我是Human，你是AI，请继续我们下面的对话，你的回复中不需要带 AI: 这个前缀".to_string(),
+            messages: "The following is a conversation with an AI assistant. The assistant is helpful, creative, clever, and very friendly.".to_string(),
         }
     }
 
@@ -35,7 +34,6 @@ impl ChatContext {
 
     pub fn add_message_with_id(&mut self, sender: MessageSender, message: String, message_id: String) {
         self.current_message_id = message_id;
-        info!("Chat context:\n{}", self.messages);
         self.messages = format!("{}\n{}: {}", self.messages, sender, message)
     }
 

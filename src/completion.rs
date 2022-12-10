@@ -7,7 +7,7 @@ struct CompletionPayload {
     prompt: String,
     max_tokens: u32,
     temperature: f32,
-    // stop: [&'static str; 2],
+    stop: [&'static str; 2],
 }
 
 pub async fn completion(prompt: String, api_key: String) -> String {
@@ -21,7 +21,7 @@ pub async fn completion(prompt: String, api_key: String) -> String {
             prompt: prompt,
             max_tokens: 500,
             temperature: 0.9,
-            // stop: ["Human: ","AI: "],
+            stop: ["Human:","AI:"],
         })
         .send()
         .await;
