@@ -17,7 +17,6 @@ use feishu::{
     auth::get_access_token_periodically,
     events::{common::BotEvent, EventType},
 };
-use tokio::task;
 use tracing::{log::warn};
 
 use crate::{
@@ -50,12 +49,11 @@ async fn main() {
         chat_context_map: RwLock::new(HashMap::new()),
     }));
     // 周期性地获取 access token
-    let access_token_task = task::spawn(get_access_token_periodically(
+    tokio::spawn(get_access_token_periodically(
         app_id.clone(),
         app_secret.clone(),
         bot_state.clone(),
     ));
-    tokio::spawn(access_token_task);
     // 储存上下文会话的map
     let app = Router::new()
         .route("/", get(|| async { "Hello, World!" }))
@@ -106,7 +104,7 @@ async fn bot(
 
                 let openai_key = bot_state.openai_key.clone();
                 let access_token = bot_state.access_token.clone();
-                let c_task = task::spawn(completion_chat(
+                tokio::spawn(completion_chat(
                     e.message.message_id,
                     e.sender.sender_id.user_id.clone(),
                     c_message,
@@ -114,7 +112,6 @@ async fn bot(
                     access_token,
                     state.clone(),
                 ));
-                tokio::spawn(c_task);
             }
         }
     } else {
